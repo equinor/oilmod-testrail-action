@@ -1,0 +1,58 @@
+name: 'Oilmod Testrail uploader'
+description: 'Upload junit test results to testrail'
+inputs:
+  testrail-user: # id of input
+    description: 'Testrail username'
+    required: true
+  testrail-host:
+    description: 'URL to testrail api'
+    required: false
+    default: https://oiltradeent.testrail.io
+  testrail-password:
+    description: 'Testrail password'
+    required: true
+  path-to-files:
+    description: 'Path to folder containing xml files'
+    required: true
+  testrail-project:
+    description: 'Testrail project name'
+    required: true
+  testrail-run-title:
+    description: 'Testrail run title'
+    required: false
+    default: 'Automated tests'
+  testrail-suite-id:
+    description: 'Testrail test suite ID'
+    required: true
+  run-reference:
+    description: 'URL to pull request, job or just text detailing the run'
+    required: false
+    default: 'No external reference added'
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - run: pip install junitparser trcli
+      shell: bash
+    - shell: bash
+      run: |
+        cd ${{ inputs.path-to-files }}
+        junitparser merge --glob *.xml junit-report.xml
+    - run: |
+        trcli -y \
+          -h "${{ inputs.testrail-host }}" \
+          --project "${{ inputs.testrail-project }}" \
+          --username "${{ inputs.testrail-user }}" \
+          --password "${{ inputs.testrail-password }}" \
+          parse_junit \
+          -f "${{ inputs.path-to-files }}/junit-report.xml" \
+          --title "${{ inputs.testrail-run-title }}" --suite-id "${{ inputs.testrail-suite-id }}" --run-description "$BUILD_URL" --close-run
+      shell: bash
+      env:
+        BUILD_URL: ${{ inputs.run-reference }}
+    - run: echo "[Testrail suite](https://oiltradeent.testrail.net/index.php?/suites/runs/$SUITE)" >> $GITHUB_STEP_SUMMARY
+      env:
+        SUITE: ${{ inputs.testrail-suite-id }}
+      shell: bash

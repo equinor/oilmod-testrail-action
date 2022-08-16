@@ -22,8 +22,11 @@ inputs:
     required: false
     default: 'Automated tests'
   testrail-suite-id:
-    description: 'Testrail test suite ID'
-    required: true
+    description: 'Testrail test suite ID. If not provided and you dont provide suite-name, testrail generates a new suite pr run'
+    required: false
+  suite-name:
+    description: 'Name of suite to create / append to in testrail'
+    required: false
   run-reference:
     description: 'URL to pull request, job or just text detailing the run'
     required: false
@@ -34,12 +37,17 @@ runs:
     - uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-    - run: pip install junitparser trcli
+    - run: pip install trcli
       shell: bash
+    - uses: actions/setup-node@v2
+      shell: bash
+      run: npm install -g merge-junit-suites
     - shell: bash
-      run: |
-        cd ${{ inputs.path-to-files }}
-        junitparser merge --glob *.xml junit-report.xml
+      run: merge-junit-suites merge --path ${{ inputs.path-to-files }} --name ${{ inputs.suite-name }} --output ${{ inputs.path-to-files }}/junit-report.xml
+#    - shell: bash
+#      run: |
+#        cd ${{ inputs.path-to-files }}
+#        junitparser merge --glob *.xml junit-report.xml
     - run: |
         trcli -y \
           -h "${{ inputs.testrail-host }}" \
@@ -48,7 +56,10 @@ runs:
           --password "${{ inputs.testrail-password }}" \
           parse_junit \
           -f "${{ inputs.path-to-files }}/junit-report.xml" \
-          --title "${{ inputs.testrail-run-title }}" --suite-id "${{ inputs.testrail-suite-id }}" --run-description "$BUILD_URL" --close-run
+          --title "${{ inputs.testrail-run-title }}" \
+          --suite-id "${{ inputs.testrail-suite-id }}" \
+          --run-description "$BUILD_URL" \
+          --close-run
       shell: bash
       env:
         BUILD_URL: ${{ inputs.run-reference }}

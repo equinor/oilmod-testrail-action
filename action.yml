@@ -43,7 +43,7 @@ runs:
     - run: pip install trcli
       shell: bash
     - uses: actions/setup-node@v2
-      shell: bash
+    - shell: bash
       run: npm install -g merge-junit-suites
     - shell: bash
       run: merge-junit-suites merge --path ${{ inputs.path-to-files }} --name ${{ inputs.suite-name }} --output ${{ inputs.path-to-files }}/junit-report.xml

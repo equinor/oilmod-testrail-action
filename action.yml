@@ -31,6 +31,9 @@ inputs:
     description: 'URL to pull request, job or just text detailing the run'
     required: false
     default: 'No external reference added'
+  close:
+    description: 'Close run'
+    required: false
 runs:
   using: "composite"
   steps:
@@ -44,25 +47,33 @@ runs:
       run: npm install -g merge-junit-suites
     - shell: bash
       run: merge-junit-suites merge --path ${{ inputs.path-to-files }} --name ${{ inputs.suite-name }} --output ${{ inputs.path-to-files }}/junit-report.xml
-#    - shell: bash
-#      run: |
-#        cd ${{ inputs.path-to-files }}
-#        junitparser merge --glob *.xml junit-report.xml
     - run: |
+        ARGS=""
+        RUNARGS=""
+        if [ -n "$SUITE" ]; then ARGS="$ARGS --suite-id $SUITE"; fi;
+        if [ -n "$CLOSE" ]; then RUNARGS="$RUNARGS --close-run"; fi;
         trcli -y \
-          -h "${{ inputs.testrail-host }}" \
-          --project "${{ inputs.testrail-project }}" \
-          --username "${{ inputs.testrail-user }}" \
-          --password "${{ inputs.testrail-password }}" \
+          -h "$HOST" \
+          --project "$PROJECT" \
+          --username "$USER" \
+          --password "$PASSWORD" \
+          $ARGS \
           parse_junit \
-          -f "${{ inputs.path-to-files }}/junit-report.xml" \
-          --title "${{ inputs.testrail-run-title }}" \
-          --suite-id "${{ inputs.testrail-suite-id }}" \
-          --run-description "$BUILD_URL" \
-          --close-run
+          -f "$JUNITPATH/junit-report.xml" \
+          --title "$TITLE" \
+          --run-description "$REFERENCE" \
+          $RUNARGS
       shell: bash
       env:
-        BUILD_URL: ${{ inputs.run-reference }}
+        REFERENCE: ${{ inputs.run-reference }}
+        SUITE: ${{ inputs.testrail-suite-id }}
+        CLOSE: ${{ inputs.close }}
+        HOST: ${{ inputs.testrail-host }}
+        PROJECT: ${{ inputs.testrail-project }}
+        USER: ${{ inputs.testrail-user }}
+        PASSWORD: ${{ inputs.testrail-password }}
+        JUNITPATH: ${{ inputs.path-to-files }}
+        TITLE: ${{ inputs.testrail-run-title }}
     - run: echo "[Testrail suite](https://oiltradeent.testrail.net/index.php?/suites/runs/$SUITE)" >> $GITHUB_STEP_SUMMARY
       env:
         SUITE: ${{ inputs.testrail-suite-id }}

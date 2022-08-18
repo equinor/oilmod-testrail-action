@@ -42,8 +42,14 @@ jobs:
           testrail-project: "Oiltrade Enterprise Testautomation"
           # Title of test run. ${{ github.ref_name }} will append the ref (PR#, branch name etc)
           testrail-run-title: "<Project name> <Test suite name> - ${{ github.ref_name }}"
-          # ID of test suite in testrail that you want to group these tests under
+          # ID of test suite in testrail that you want to group these tests under (optional)
           testrail-suite-id: 000 
+          # Name of test-suite to create (or that exists) in testrail (optional). If this & suite-id is omitted, a name is generated
+          suite-name: "My Suite"
+          # If the run should be marked as closed automatically (optional, default false)
+          close: "true"
           # run-reference is added as extra information to the test run in testrail
-          run-reference: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} - ${{ github.ref_name }}
+          run-reference: |
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            ${{ github.ref_name }}
 ```
